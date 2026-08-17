@@ -66,7 +66,8 @@ setInterval(async () => {
                         body: JSON.stringify({
                             chat_id: data.chat_id,
                             text: data.text,
-                            parse_mode: 'HTML'
+                            parse_mode: 'HTML',
+                            disable_notification: data.silent // <--- ПЕРЕДАЕМ ПАРАМЕТР БЕЗЗВУЧНОГО РЕЖИМА В TELEGRAM
                         })
                     });
                     const res = await r.json();
@@ -90,8 +91,9 @@ setInterval(async () => {
 
 // Эндпоинт установки нового таймера
 app.post('/set', async (req, res) => {
-    const { id, chat_id, text, delay, notify = true } = req.body;
-    console.log(`📥 /set → id=${id} | delay=${delay} сек | notify=${notify}`);
+    // <--- ДОБАВИЛИ silent В ПРИНИМАЕМЫЕ ДАННЫЕ
+    const { id, chat_id, text, delay, notify = true, silent = false } = req.body; 
+    console.log(`📥 /set → id=${id} | delay=${delay} сек | notify=${notify} | silent=${silent}`);
     
     if (!id || !chat_id || !text || delay === undefined) {
         return res.status(400).json({ error: 'Missing parameters' });
@@ -99,7 +101,9 @@ app.post('/set', async (req, res) => {
     
     if (timers.has(id)) timers.delete(id);
     const endTime = Date.now() + delay * 1000;
-    timers.set(id, { chat_id, text, endTime, notify });
+    
+    // <--- СОХРАНЯЕМ ПАРАМЕТР silent В БАЗУ ТАЙМЕРОВ
+    timers.set(id, { chat_id, text, endTime, notify, silent });
     
     await saveTimers(); // Ждем сохранения в облако
     console.log(`✅ Таймер ${id} сохранён до ${new Date(endTime).toLocaleTimeString()}`);
